@@ -42,7 +42,7 @@ matrix_mailer_relay_auth_password: "{{ vault_matrix_mailer_relay_auth_password }
 
 # S3 bucket settings
 # Initially set this to true, but had to set it to false and redeploy because it couldn't access the goofy mount at all
-matrix_s3_media_store_enabled: false
+matrix_s3_media_store_enabled: true
 matrix_s3_media_store_bucket_name: "com-micahrl-matrix-media"
 matrix_s3_media_store_aws_access_key: "{{ vault_matrix_s3_media_store_aws_access_key }}"
 matrix_s3_media_store_aws_secret_key: "{{ vault_matrix_s3_media_store_aws_secret_key }}"
