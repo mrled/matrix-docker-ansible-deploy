@@ -28,10 +28,31 @@ while test $# -gt 0; do
     esac
 done
 
-uri=https://$server/_matrix/client/r0/login
-data="{'identifier': {'type': 'm.id.user', 'user': '$user' }, 'password': '$password', 'type': 'm.login.password', 'device_id': '$user-curl', 'initial_device_display_name': '$user-curl'}"
-echo "Will curl url '$uri' with data:"
-echo "$data"
+# If jq is available, use it
+if command -v jq 2>&1 >/dev/null; then
+    jsonout() { jq -C; }
+else
+    jsonout() { cat; }
+fi
 
-curl --data "$data" "$uri"
+uri=https://$server/_matrix/client/r0/login
+data="$(cat <<ENDJSON
+{
+  "identifier": {
+    "type": "m.id.user",
+    "user": "$user"
+  },
+  "password": "$password",
+  "type": "m.login.password",
+  "device_id": "$user-curl",
+  "initial_device_display_name": "$user-curl"
+}
+ENDJSON
+)"
+echo "Will curl url '$uri' with data:"
+echo "$data" | jsonout
+
+result="$(curl --silent --data "$data" "$uri")"
+echo "Result:"
+echo "$result" | jsonout
 
