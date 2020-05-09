@@ -226,7 +226,7 @@ listeners:
     x_forwarded: true
 
     resources:
-      - names: [client]
+      - names: {{ matrix_synapse_http_listener_resource_names|to_json }}
         compress: false
 
 {% if matrix_synapse_federation_enabled %}
@@ -967,7 +967,7 @@ account_validity:
 #registrations_require_3pid:
 #  - email
 #  - msisdn
-{% if matrix_synapse_registrations_require_3pid %}
+{% if matrix_synapse_registrations_require_3pid|length > 0 %}
 registrations_require_3pid: {{ matrix_synapse_registrations_require_3pid|to_json }}
 {% endif %}
 
@@ -986,6 +986,9 @@ registrations_require_3pid: {{ matrix_synapse_registrations_require_3pid|to_json
 #    pattern: '.*@vector\.im'
 #  - medium: msisdn
 #    pattern: '\+44'
+{% if matrix_synapse_allowed_local_3pids|length > 0 %}
+allowed_local_3pids: {{ matrix_synapse_allowed_local_3pids|to_json }}
+{% endif %}
 
 # Enable 3PIDs lookup requests to identity servers from this server.
 #

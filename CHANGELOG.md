@@ -1,3 +1,34 @@
+# 2020-04-28
+
+## Newer IRC bridge (with potential breaking change)
+
+This upgrades matrix-appservice-irc from 0.14.1 to 0.16.0.  Upstream
+made a change to how you define manual mappings.  If you added a
+`mapping` to your configuration, you will need to update it accoring
+to the [upstream
+instructions](https://github.com/matrix-org/matrix-appservice-irc/blob/master/CHANGELOG.md#0150-2020-02-05).
+If you did not include `mappings` in your configuration for IRC, no
+change is necessary.  `mappings` is not part of the default
+configuration.
+
+# 2020-04-23
+
+## Slack bridging support
+
+Thanks to [Rodrigo Belem](https://github.com/rbelem)'s efforts, the playbook now supports bridging to [Slack](https://slack.com) via the [mx-puppet-slack](https://github.com/Sorunome/mx-puppet-slack) bridge.
+
+See our [Setting up MX Puppet Slack bridging](docs/configuring-playbook-bridge-mx-puppet-slack.md) documentation page for getting started.
+
+
+# 2020-04-09
+
+## Skype bridging support
+
+Thanks to [Rodrigo Belem](https://github.com/rbelem)'s efforts, the playbook now supports bridging to [Skype](https://www.skype.com) via the [mx-puppet-skype](https://github.com/Sorunome/mx-puppet-skype) bridge.
+
+See our [Setting up MX Puppet Skype bridging](docs/configuring-playbook-bridge-mx-puppet-skype.md) documentation page for getting started.
+
+
 # 2020-04-05
 
 ## Private Jitsi support
