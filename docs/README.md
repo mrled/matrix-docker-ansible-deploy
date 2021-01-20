@@ -10,6 +10,14 @@
 
 - [Installing](installing.md)
 
+- **Importing data from another server installation**
+
+  - [Importing an existing SQLite database (from another Synapse installation)](importing-synapse-sqlite.md) (optional)
+
+  - [Importing an existing Postgres database (from another installation)](importing-postgres.md) (optional)
+
+  - [Importing `media_store` data files from an existing Synapse installation](importing-synapse-media-store.md) (optional)
+
 - [Registering users](registering-users.md)
 
 - [Updating users passwords](updating-users-passwords.md)

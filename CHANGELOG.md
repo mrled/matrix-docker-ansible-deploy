@@ -1,3 +1,396 @@
+# 2021-01-20
+
+## (Breaking Change) The mautrix-facebook bridge now requires a Postgres database
+
+A new version of the [mautrix-facebook](https://github.com/tulir/mautrix-facebook) bridge has been released. It's a full rewrite of its backend and the bridge now requires Postgres. New versions of the bridge can no longer run on SQLite.
+
+**TLDR**: if you're NOT using an [external Postgres server](docs/configuring-playbook-external-postgres.md) and have NOT forcefully kept the bridge on SQLite during [The big move to all-on-Postgres (potentially dangerous)](#the-big-move-to-all-on-postgres-potentially-dangerous), you will be automatically upgraded without manual intervention. All you need to do is send a `login` message to the Facebook bridge bot again.
+
+Whether this change requires your intervention depends mostly on:
+- whether you're using an [external Postgres server](docs/configuring-playbook-external-postgres.md). If yes, then [you need to do something](#upgrade-path-for-people-running-an-external-postgres-server).
+- or whether you've force-changed the bridge's database engine to SQLite (`matrix_mautrix_facebook_database_engine: 'sqlite'` in your `vars.yml`) some time in the past (likely during [The big move to all-on-Postgres (potentially dangerous)](#the-big-move-to-all-on-postgres-potentially-dangerous)).
+
+As already mentioned above, you most likely don't need to do anything. If you rerun the playbook and don't get an error, you've been automatically upgraded. Just send a `login` message to the Facebook bridge bot again. Otherwise, read below for a solution.
+
+### Upgrade path for people NOT running an external Postgres server (default for the playbook)
+
+If you're **not running an external Postgres server**, then this bridge either already works on Postgres for you, or you've intentionally kept it back on SQLite with custom configuration (`matrix_mautrix_facebook_database_engine: 'sqlite'` in your `vars.yml`) .
+
+Simply remove that custom configuration from your `vars.yml` file (if it's there) and re-run the playbook. It should upgrade you automatically.
+You'll need to send a `login` message to the Facebook bridge bot again.
+
+Alternatively, [you can stay on SQLite for a little longer](#staying-on-sqlite-for-a-little-longer-temporary-solution).
+
+### Upgrade path for people running an external Postgres server
+
+For people using the internal Postgres server (the default for the playbook):
+- we automatically create an additional `matrix_mautrix_facebook` Postgres database and credentials to access it
+- we automatically adjust the bridge's `matrix_mautrix_facebook_database_*` variables to point the bridge to that Postgres database
+- we use [pgloader](https://pgloader.io/) to automatically import the existing SQLite data for the bridge into the `matrix_mautrix_facebook` Postgres database
+
+If you are using an [external Postgres server](docs/configuring-playbook-external-postgres.md), unfortunately we currently can't do any of that for you.
+
+You have 3 ways to proceed:
+
+- contribute to the playbook to make this possible (difficult)
+- or, do the migration "steps" manually:
+  - stop the bridge (`systemctl stop matrix-mautrix-facebook`)
+  - create a new `matrix_mautrix_facebook` Postgres database for it
+  - run [pgloader](https://pgloader.io/) manually (we import this bridge's data using default settings and it works well)
+  - define `matrix_mautrix_facebook_database_*` variables in your `vars.yml` file (credentials, etc.) - you can find their defaults in `roles/matrix-mautrix-facebook/defaults/main.yml`
+  - switch the bridge to Postgres (`matrix_mautrix_facebook_database_engine: 'postgres'` in your `vars.yml` file)
+  - re-run the playbook (`--tags=setup-all,start`) and ensure the bridge works (`systemctl status matrix-mautrix-facebook` and `journalctl -fu matrix-mautrix-facebook`)
+  - send a `login` message to the Facebook bridge bot again
+- or, [stay on SQLite for a little longer (temporary solution)](#staying-on-sqlite-for-a-little-longer-temporary-solution)
+
+### Staying on SQLite for a little longer (temporary solution)
+
+To keep using this bridge with SQLite for a little longer (**not recommended**), use the following configuration in your `vars.yml` file:
+
+```yaml
+# Force-change the database engine to SQLite.
+matrix_mautrix_facebook_database_engine: 'sqlite'
+
+# Force-downgrade to the last bridge version which supported SQLite.
+matrix_mautrix_facebook_docker_image: "{{ matrix_mautrix_facebook_docker_image_name_prefix }}tulir/mautrix-facebook:da1b4ec596e334325a1589e70829dea46e73064b"
+```
+
+If you do this, keep in mind that **you can't run this forever**. This SQLite-supporting bridge version is not getting any updates and will break sooner or later. The playbook will also drop support for SQLite at some point in the future.
+
+
+# 2021-01-17
+
+## matrix-corporal goes 2.0
+
+[matrix-corporal v2 has been released](https://github.com/devture/matrix-corporal/releases/tag/2.0.0) and the playbook also supports it now.
+
+No manual intervention is required in the common case.
+
+The new [matrix-corporal](https://github.com/devture/matrix-corporal) version is also the first one to support Interactive Authentication. If you wish to enable that (hint: you should), you'll need to set up the [REST auth password provider](docs/configuring-playbook-rest-auth.md). There's more information in [our matrix-corporal docs](docs/configuring-playbook-matrix-corporal.md).
+
+
+# 2021-01-14
+
+## Moving from cronjobs to systemd timers
+
+We no longer use cronjobs for Let's Encrypt SSL renewal and `matrix-nginx-proxy`/`matrix-coturn` reloading. Instead, we've switched to systemd timers.
+
+The largest benefit of this is that we no longer require you to install a cron daemon, thus simplifying our install procedure.
+
+The playbook will migrate you from cronjobs to systemd timers automatically. This is just a heads up.
+
+
+# 2021-01-08
+
+## (Breaking Change) New SSL configuration
+
+SSL configuration (protocols, ciphers) can now be more easily controlled thanks to us making use of configuration presets.
+
+We define a few presets (old, intermediate, modern), following the [Mozilla SSL Configuration Generator](https://ssl-config.mozilla.org/#server=nginx).
+
+A new variable `matrix_nginx_proxy_ssl_preset` controls which preset is used (defaults to `"intermediate"`).
+
+Compared to before, this changes nginx's `ssl_prefer_server_ciphers` to `off`  (used to default to `on`). It also add some more ciphers to the list, giving better performance on mobile devices, and removes some weak ciphers. More information in the [documentation](docs/configuring-playbook-nginx.md).
+
+To revert to the old behaviour, set the following variables:
+
+```yaml
+matrix_nginx_proxy_ssl_ciphers: "EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH"
+matrix_nginx_proxy_ssl_prefer_server_ciphers: "on"
+```
+
+Just like before, you can still use your own custom protocols by specifying them in `matrix_nginx_proxy_ssl_protocols`. Doing so overrides the values coming from the preset.
+
+
+# 2021-01-03
+
+## Signal bridging support via mautrix-signal
+
+Thanks to [laszabine](https://github.com/laszabine)'s efforts, the playbook now supports bridging to [Signal](https://www.signal.org/) via the [mautrix-signal](https://github.com/tulir/mautrix-signal) bridge. See our [Setting up Mautrix Signal bridging](docs/configuring-playbook-bridge-mautrix-signal.md) documentation page for getting started.
+
+If you had installed the mautrix-signal bridge while its Pull Request was still work-in-progress, you can migrate your data to the new and final setup by referring to [this comment](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/686#issuecomment-753510789).
+
+
+# 2020-12-23
+
+## The big move to all-on-Postgres (potentially dangerous)
+
+**TLDR**: all your bridges (and other services) will likely be auto-migrated from SQLite/nedb to Postgres, hopefully without trouble. You can opt-out (see how below), if too worried about breakage.
+
+Until now, we've only used Postgres as a database for Synapse. All other services (bridges, bots, etc.) were kept simple and used a file-based database (SQLite or nedb).
+
+Since [this huge pull request](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/740), **all of our services now use Postgres by default**. Thanks to [Johanna Dorothea Reichmann](https://github.com/jdreichmann) for starting the work on it and for providing great input!
+
+Moving all services to Postgres brings a few **benefits** to us:
+
+- **improved performance**
+- **improved compatibility**. Most bridges are deprecating SQLite/nedb support or offer less features when not on Postgres.
+- **easier backups**. It's still some effort to take a proper backup (Postgres dump + various files, keys), but a Postgres dump now takes you much further.
+- we're now **more prepared to introduce other services** that need a Postgres database - [Dendrite](https://github.com/matrix-org/dendrite), the [mautrix-signal](https://github.com/tulir/mautrix-signal) bridge (existing [pull request](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/686)), etc.
+
+### Key takeway
+
+- existing installations that use an [external Postgres](https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-external-postgres.md) server should be unaffected (they remain on SQLite/nedb for all services, except Synapse)
+
+- for existing installations which use our integrated Postgres database server (`matrix-postgres`, which is the default), **we automatically migrate data** from SQLite/nedb to Postgres and **archive the database files** (`something.db` -> `something.db.backup`), so you can restore them if you need to go back (see how below).
+
+### Opting-out of the Postgres migration
+
+This is a **very large and somewhat untested change** (potentially dangerous), so **if you're not feeling confident/experimental, opt-out** of it for now. Still, it's the new default and what we (and various bridges) will focus on going forward, so don't stick to old ways for too long.
+
+You can remain on SQLite/nedb (at least for now) by adding a variable like this to your `vars.yml` file for each service you use: `matrix_COMPONENT_database_engine: sqlite` (e.g. `matrix_mautrix_facebook_database_engine: sqlite`).
+
+Some services (like `appservice-irc` and `appservice-slack`) don't use SQLite, so use `nedb`, instead of `sqlite` for them.
+
+### Going back to SQLite/nedb if things went wrong
+
+If you went with the Postgres migration and it went badly for you (some bridge not working as expected or not working at all), do this:
+
+- stop all services (`ansible-playbook -i inventory/hosts setup.yml --tags=stop`)
+- SSH into the server and rename the old database files (`something.db.backup` -> `something.db`). Example: `mv /matrix/mautrix-facebook/data/mautrix-facebook.db.backup /matrix/mautrix-facebook/data/mautrix-facebook.db`
+- switch the affected service back to SQLite (e.g. `matrix_mautrix_facebook_database_engine: sqlite`). Some services (like `appservice-irc` and `appservice-slack`) don't use SQLite, so use `nedb`, instead of `sqlite` for them.
+- re-run the playbook (`ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start`)
+- [get in touch](README.md#support) with us
+
+# 2020-12-11
+
+## synapse-janitor support removed
+
+We've removed support for the unmaintained [synapse-janitor](https://github.com/xwiki-labs/synapse_scripts) script. There's been past reports of it corrupting the Synapse database. Since there hasn't been any new development on it and it doesn't seem too useful nowadays, there's no point in including it in the playbook.
+
+If you need to clean up or compact your database, consider using the Synapse Admin APIs directly. See our [Synapse maintenance](docs/maintenance-synapse.md) and [Postgres maintenance](docs/maintenance-postgres.md) documentation pages for more details.
+
+
+## Docker 20.10 is here
+
+(No need to do anything special in relation to this. Just something to keep in mind)
+
+Docker 20.10 got released recently and your server will likely get it the next time you update.
+
+This is the first major Docker update in a long time and it packs a lot of changes.
+Some of them introduced some breakage for us initially (see [here](https://github.com/spantaleev/matrix-docker-ansible-deploy/commit/d08b27784f222effcbce2abf924bf07bbe0893be) and [here](https://github.com/spantaleev/matrix-docker-ansible-deploy/commit/7593d969e316cc0144bce378a5be58c76c2c37ee)), but it should be all good now.
+
+
+# 2020-12-08
+
+## openid APIs exposed by default on the federation port when federation disabled
+
+We've changed some defaults. People running with our default configuration (federation enabled), are not affected at all.
+
+If you are running an unfederated server (`matrix_synapse_federation_enabled: false`), this may be of interest to you.
+
+When federation is disabled, but ma1sd or Dimension are enabled, we'll now expose the `openid` APIs on the federation port.
+These APIs are necessary for some ma1sd features to work. If you'd like to prevent this, you can: `matrix_synapse_federation_port_openid_resource_required: false`.
+
+
+# 2020-11-27
+
+## Recent Jitsi updates may require configuration changes
+
+We've recently [updated from Jitsi build 4857 to build 5142](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/719), which brings a lot of configuration changes.
+
+**If you use our default Jitsi settings, you won't have to do anything.**
+
+People who have [fine-tuned Jitsi](docs/configuring-playbook-jitsi.md#optional-fine-tune-jitsi) may find that some options got renamed now, others are gone and yet others still need to be defined in another way.
+
+The next time you run the playbook [installation](docs/installing.md) command, our validation logic will tell you if you're using some variables like that and will recommend a migration path for each one.
+
+Additionally, we've recently disabled transcriptions (`matrix_jitsi_enable_transcriptions: false`) and recording (`matrix_jitsi_enable_recording: false`) by default. These features did not work anyway, because we don't install the required dependencies for them (Jigasi and Jibri, respectively). If you've been somehow pointing your Jitsi installation to some manually installed Jigasi/Jibri service, you may need to toggle these flags back to enabled to have transcriptions and recordings working.
+
+
+# 2020-11-23
+
+## Breaking change matrix-sms-bridge
+
+Because of many problems using gammu as SMS provider, matrix-sms-bridge now uses (https://github.com/RebekkaMa/android-sms-gateway-server) by default. See (the docs)[./docs/configuring-playbook-bridge-matrix-bridge-sms.md] which new vars you need to add.
+
+If you are using this playbook to deploy matrix-sms-bridge and still really want to use gammu as SMS provider, we could possibly add support for both android-sms-gateway-server and gammu.
+
+# 2020-11-13
+
+## Breaking change matrix-sms-bridge
+
+The new version of [matrix-sms-bridge](https://github.com/benkuly/matrix-sms-bridge) changed its database from neo4j to h2. You need to sync the bridge at the first start. Note that this only will sync rooms where the @smsbot:yourServer is member. For rooms without @smsbot:yourServer you need to kick and invite the telephone number **or** invite @smsbot:yourServer.
+
+1. Add the following to your `vars.yml` file: `matrix_sms_bridge_container_extra_arguments=['--env SPRING_PROFILES_ACTIVE=initialsync']`
+2. Login to your host shell and remove old systemd file from your host: `rm /etc/systemd/system/matrix-sms-bridge-database.service`
+2. Run `ansible-playbook -i inventory/hosts setup.yml --tags=setup-matrix-sms-bridge,start`
+3. Login to your host shell and check the logs with `journalctl -u matrix-sms-bridge` until the sync finished.
+4. Remove the var from the first step.
+5. Run `ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start`.
+
+# 2020-11-10
+
+## Dynamic DNS support
+
+Thanks to [Scott Crossen](https://github.com/scottcrossen), the playbook can now manage Dynamic DNS for you using [ddclient](https://ddclient.net/).
+
+To learn more, follow our [Dynamic DNS docs page](docs/configuring-playbook-dynamic-dns.md).
+
+
+# 2020-10-28
+
+## (Compatibility Break) https://matrix.DOMAIN/ now redirects to https://element.DOMAIN/
+
+Until now, we used to serve a static page coming from Synapse at `https://matrix.DOMAIN/`. This page was not very useful to anyone.
+
+Since `matrix.DOMAIN` may be accessed by regular users in certain conditions, it's probably better to redirect them to a better place (e.g. to the [Element](docs/configuring-playbook-client-element.md) client).
+
+If Element is installed (`matrix_client_element_enabled: true`, which it is by default), we now redirect people to it, instead of showing them a Synapse static page.
+
+If you'd like to control where the redirect goes, use the `matrix_nginx_proxy_proxy_matrix_client_redirect_root_uri_to_domain` variable.
+To restore the old behavior of not redirecting anywhere and serving the Synapse static page, set it to an empty value (`matrix_nginx_proxy_proxy_matrix_client_redirect_root_uri_to_domain: ""`).
+
+
+# 2020-10-26
+
+## (Compatibility Break) /_synapse/admin is no longer publicly exposed by default
+
+We used to expose the Synapse Admin APIs publicly (at `https://matrix.DOMAIN/_synapse/admin`).
+These APIs require authentication with a valid access token, so it's not that big a deal to expose them.
+
+However, following [official Synapse's reverse-proxying recommendations](https://github.com/matrix-org/synapse/blob/master/docs/reverse_proxy.md#synapse-administration-endpoints), we're no longer exposing `/_synapse/admin` by default.
+
+If you'd like to restore restore the old behavior and expose `/_synapse/admin` publicly, you can use the following configuration (in your `vars.yml`):
+
+```yaml
+matrix_nginx_proxy_proxy_matrix_client_api_forwarded_location_synapse_admin_api_enabled: true
+```
+
+
+# 2020-10-02
+
+## Minimum Ansible version raised to v2.7.0
+
+We were claiming to support [Ansible](https://www.ansible.com/) v2.5.2 and higher, but issues like [#662](https://github.com/spantaleev/matrix-docker-ansible-deploy/issues/662) demonstrate that we need at least v2.7.0.
+
+If you've been using the playbook without getting any errors until now, you're probably on a version higher than that already (or you're not using the `matrix-ma1sd` and `matrix-client-element` roles).
+
+Our [Ansible docs page](docs/ansible.md) contains information on how to run a more up-to-date version of Ansible.
+
+
+# 2020-10-01
+
+## Postgres 13 support
+
+The playbook now installs [Postgres 13](https://www.postgresql.org/about/news/postgresql-13-released-2077/) by default.
+
+If you have have an existing setup, it's likely running on an older Postgres version (9.x, 10.x, 11.x or 12.x). You can easily upgrade by following the [upgrading PostgreSQL guide](docs/maintenance-postgres.md#upgrading-postgresql).
+
+# 2020-09-01
+
+## matrix-registration support
+
+The playbook can now help you set up [matrix-registration](https://github.com/ZerataX/matrix-registration) - an application that lets you keep your Matrix server's registration private, but still allow certain users (those having a unique registration link) to register by themselves.
+
+See our [Setting up matrix-registration](docs/configuring-playbook-matrix-registration.md) documentation page to get started.
+
+
+# 2020-08-21
+
+## rust-synapse-compress-state support
+
+The playbook can now help you use [rust-synapse-compress-state](https://github.com/matrix-org/rust-synapse-compress-state) to compress the state groups in your Synapse database.
+
+See our [Compressing state with rust-synapse-compress-state](docs/maintenance-synapse.md#compressing-state-with-rust-synapse-compress-state) documentation page to get started.
+
+
+# 2020-07-22
+
+## Synapse Admin support
+
+The playbook can now help you set up [synapse-admin](https://github.com/Awesome-Technologies/synapse-admin).
+
+See our [Setting up Synapse Admin](docs/configuring-playbook-synapse-admin.md) documentation to get started.
+
+
+# 2020-07-20
+
+## matrix-reminder-bot support
+
+The playbook can now help you set up [matrix-reminder-bot](https://github.com/anoadragon453/matrix-reminder-bot).
+
+See our [Setting up matrix-reminder-bot](docs/configuring-playbook-bot-matrix-reminder-bot.md) documentation to get started.
+
+
+# 2020-07-17
+
+## (Compatibility Break) Riot is now Element
+
+As per the official announcement, [Riot has been rebraned to Element](https://element.io/blog/welcome-to-element/).
+
+The playbook follows suit. Existing installations have a few options for how to handle this.
+
+See our [Migrating to Element](docs/configuring-playbook-riot-web.md#migrating-to-element) documentation page for more details.
+
+
+# 2020-07-03
+
+## Steam bridging support via mx-puppet-steam
+
+Thanks to [Hugues Morisset](https://github.com/izissise)'s efforts, the playbook now supports bridging to [Steam](https://steamapp.com/) via the [mx-puppet-steam](https://github.com/icewind1991/mx-puppet-steam) bridge. See our [Setting up MX Puppet Steam bridging](docs/configuring-playbook-bridge-mx-puppet-steam.md) documentation page for getting started.
+
+
+# 2020-07-01
+
+## Discord bridging support via mx-puppet-discord
+
+Thanks to [Hugues Morisset](https://github.com/izissise)'s efforts, the playbook now supports bridging to [Discord](https://discordapp.com/) via the [mx-puppet-discord](https://github.com/Sorunome/mx-puppet-discord) bridge. See our [Setting up MX Puppet Discord bridging](docs/configuring-playbook-bridge-mx-puppet-discord.md) documentation page for getting started.
+
+**Note**: this is a new Discord bridge. The playbook still retains Discord bridging via [matrix-appservice-discord](docs/configuring-playbook-bridge-appservice-discord.md). You're free too use the bridge that serves you better, or even both (for different users and use-cases).
+
+
+# 2020-06-30
+
+## Instagram and Twitter bridging support
+
+Thanks to [Johanna Dorothea Reichmann](https://github.com/jdreichmann)'s efforts, the playbook now supports bridging to [Instagram](https://www.instagram.com/) via the [mx-puppet-instagram](https://github.com/Sorunome/mx-puppet-instagram) bridge. See our [Setting up MX Puppet Instagram bridging](docs/configuring-playbook-bridge-mx-puppet-instagram.md) documentation page for getting started.
+
+Thanks to [Tulir Asokan](https://github.com/tulir)'s efforts, the playbook now supports bridging to [Twitter](https://twitter.com/) via the [mx-puppet-twitter](https://github.com/Sorunome/mx-puppet-twitter) bridge. See our [Setting up MX Puppet Twitter bridging](docs/configuring-playbook-bridge-mx-puppet-twitter.md) documentation page for getting started.
+
+
+# 2020-06-28
+
+## (Post Mortem / fixed Security Issue) Re-enabling User Directory search powered by the ma1sd Identity Server
+
+User Directory search requests used to go to the ma1sd identity server by default, which queried its own stores and the Synapse database.
+
+ma1sd's [security issue](https://github.com/ma1uta/ma1sd/issues/44) has been fixed in version `2.4.0`, with [this commit](ma1uta/ma1sd@2bb5a734d11662b06471113cf3d6b4cee5e33a85). `ma1sd 2.4.0` is now the default version for this playbook. For more information on what happened, please check the mentioned issue.
+
+We are re-enabling user directory search with this update. Those who would like to keep it disabled can use this configuration: `matrix_nginx_proxy_proxy_matrix_user_directory_search_enabled: false`
+
+As always, re-running the playbook is enough to get the updated bits.
+
+# 2020-06-11
+
+## SMS bridging requires db reset
+
+The current version of [matrix-sms-bridge](https://github.com/benkuly/matrix-sms-bridge) needs you to delete the database to work as expected. Just remove `/matrix/matrix-sms-bridge/database/*`. It also adds a new requried var `matrix_sms_bridge_default_region`.
+
+To reuse your existing rooms, invite `@smsbot:yourServer` to the room or write a message. You are also able to use automated room creation with telephonenumers by writing `sms send -t 01749292923 "Hello World"` in a room with `@smsbot:yourServer`. See [the docs](https://github.com/benkuly/matrix-sms-bridge) for more information.
+
+# 2020-06-05
+
+## SMS bridging support
+
+Thanks to [benkuly](https://github.com/benkuly)'s efforts, the playbook now supports bridging to SMS (with one telephone number only) via [matrix-sms-bridge](https://github.com/benkuly/matrix-sms-bridge).
+
+See our [Setting up Matrix SMS bridging](docs/configuring-playbook-bridge-matrix-bridge-sms.md) documentation page for getting started.
+
+
+# 2020-05-19
+
+## (Compatibility Break / Security Issue) Disabling User Directory search powered by the ma1sd Identity Server
+
+User Directory search requests used to go to the ma1sd identity server by default, which queried its own stores and the Synapse database.
+
+ma1sd current has [a security issue](https://github.com/ma1uta/ma1sd/issues/44), which made it leak information about all users - including users created by bridges, etc.
+
+Until the issue gets fixed, we're making User Directory search not go to ma1sd by default. You **need to re-run the playbook and restart services to apply this workaround**.
+
+*If you insist on restoring the old behavior* (**which has a security issue!**), you *might* use this configuration: `matrix_nginx_proxy_proxy_matrix_user_directory_search_enabled: "{{ matrix_ma1sd_enabled }}"`
+
+
 # 2020-04-28
 
 ## Newer IRC bridge (with potential breaking change)
@@ -10,6 +403,7 @@ instructions](https://github.com/matrix-org/matrix-appservice-irc/blob/master/CH
 If you did not include `mappings` in your configuration for IRC, no
 change is necessary.  `mappings` is not part of the default
 configuration.
+
 
 # 2020-04-23
 

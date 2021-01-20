@@ -17,7 +17,7 @@
 - import_tasks: "{{ role_path }}/tasks/import_media_store.yml"
   when: run_synapse_import_media_store|bool
   tags:
-    - import-media-store
+    - import-synapse-media-store
 
 - import_tasks: "{{ role_path }}/tasks/register_user.yml"
   when: run_synapse_register_user|bool
@@ -42,6 +42,11 @@
   when: run_synapse_update_user_password|bool
   tags:
     - update-user-password
+
+- import_tasks: "{{ role_path }}/tasks/rust-synapse-compress-state/main.yml"
+  when: run_synapse_rust_synapse_compress_state|bool
+  tags:
+    - rust-synapse-compress-state
 
 - name: Mark matrix-synapse role as executed
   set_fact:
