@@ -12,4 +12,4 @@
 # consider adding an additional `ansible_connection=local` argument below.
 
 [matrix_servers]
-olcott.micahrl.com ansible_host=3.22.149.171 ansible_ssh_user=ubuntu
+remington.micahrl.com ansible_user=root
