@@ -52,9 +52,10 @@ matrix_jitsi_jibri_recorder_password: ''
 
 matrix_jitsi_enable_lobby: false
 
-matrix_jitsi_container_image_tag: "stable-5142"
+matrix_jitsi_version: stable-5765-1
+matrix_jitsi_container_image_tag: "{{ matrix_jitsi_version }}" # for backward-compatibility
 
-matrix_jitsi_web_docker_image: "docker.io/jitsi/web:{{ matrix_jitsi_container_image_tag }}"
+matrix_jitsi_web_docker_image: "{{ matrix_container_global_registry_prefix }}jitsi/web:{{ matrix_jitsi_container_image_tag }}"
 matrix_jitsi_web_docker_image_force_pull: "{{ matrix_jitsi_web_docker_image.endswith(':latest') }}"
 
 matrix_jitsi_web_base_path: "{{ matrix_base_data_path }}/jitsi/web"
@@ -67,9 +68,12 @@ matrix_jitsi_web_public_url: "https://{{ matrix_server_fqn_jitsi }}"
 # Addresses need to be prefixed with one of `stun:`, `turn:` or `turns:`.
 matrix_jitsi_web_stun_servers: ['stun:meet-jit-si-turnrelay.jitsi.net:443']
 
+# Controls whether Etherpad will be available within Jitsi
+matrix_jitsi_etherpad_enabled: false
+
 # Controls whether the matrix-jitsi-web container exposes its HTTP port (tcp/80 in the container).
 #
-# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:12080"), or empty string to not expose.
+# Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:13080"), or empty string to not expose.
 matrix_jitsi_web_container_http_host_bind_port: ''
 
 # A list of extra arguments to pass to the container
@@ -96,7 +100,7 @@ matrix_jitsi_web_interface_config_native_app_name: "Jitsi Meet"
 matrix_jitsi_web_interface_config_provider_name: "Jitsi"
 matrix_jitsi_web_interface_config_show_powered_by: false
 matrix_jitsi_web_interface_config_disable_transcription_subtitles: false
-matrix_jisti_web_interface_config_show_deep_linking_image: false
+matrix_jitsi_web_interface_config_show_deep_linking_image: false
 
 # Custom configuration to be injected into `interface_config.js`, passed to Jitsi Web.
 # This configuration gets appended to the final interface configuration that Jitsi Web uses.
@@ -159,7 +163,7 @@ matrix_jitsi_web_custom_config_extension: ''
 matrix_jitsi_web_environment_variables_extension: ''
 
 
-matrix_jitsi_prosody_docker_image: "docker.io/jitsi/prosody:{{ matrix_jitsi_container_image_tag }}"
+matrix_jitsi_prosody_docker_image: "{{ matrix_container_global_registry_prefix }}jitsi/prosody:{{ matrix_jitsi_container_image_tag }}"
 matrix_jitsi_prosody_docker_image_force_pull: "{{ matrix_jitsi_prosody_docker_image.endswith(':latest') }}"
 
 matrix_jitsi_prosody_base_path: "{{ matrix_base_data_path }}/jitsi/prosody"
@@ -173,7 +177,7 @@ matrix_jitsi_prosody_container_extra_arguments: []
 matrix_jitsi_prosody_systemd_required_services_list: ['docker.service']
 
 
-matrix_jitsi_jicofo_docker_image: "docker.io/jitsi/jicofo:{{ matrix_jitsi_container_image_tag }}"
+matrix_jitsi_jicofo_docker_image: "{{ matrix_container_global_registry_prefix }}jitsi/jicofo:{{ matrix_jitsi_container_image_tag }}"
 matrix_jitsi_jicofo_docker_image_force_pull: "{{ matrix_jitsi_jicofo_docker_image.endswith(':latest') }}"
 
 matrix_jitsi_jicofo_base_path: "{{ matrix_base_data_path }}/jitsi/jicofo"
@@ -190,7 +194,7 @@ matrix_jitsi_jicofo_auth_user: focus
 matrix_jitsi_jicofo_auth_password: ''
 
 
-matrix_jitsi_jvb_docker_image: "docker.io/jitsi/jvb:{{ matrix_jitsi_container_image_tag }}"
+matrix_jitsi_jvb_docker_image: "{{ matrix_container_global_registry_prefix }}jitsi/jvb:{{ matrix_jitsi_container_image_tag }}"
 matrix_jitsi_jvb_docker_image_force_pull: "{{ matrix_jitsi_jvb_docker_image.endswith(':latest') }}"
 
 matrix_jitsi_jvb_base_path: "{{ matrix_base_data_path }}/jitsi/jvb"

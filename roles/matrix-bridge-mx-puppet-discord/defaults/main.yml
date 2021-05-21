@@ -11,8 +11,9 @@ matrix_mx_puppet_discord_container_image_self_build_repo: "https://github.com/ma
 # Takes an "<ip>:<port>" or "<port>" value (e.g. "127.0.0.1:8432"), or empty string to not expose.
 matrix_mx_puppet_discord_container_http_host_bind_port: ''
 
-matrix_mx_puppet_discord_docker_image: "{{ matrix_mx_puppet_discord_docker_image_name_prefix }}sorunome/mx-puppet-discord:latest"
-matrix_mx_puppet_discord_docker_image_name_prefix: "{{ 'localhost/' if matrix_mx_puppet_discord_container_image_self_build else 'docker.io/' }}"
+matrix_mx_puppet_discord_version: latest
+matrix_mx_puppet_discord_docker_image: "{{ matrix_mx_puppet_discord_docker_image_name_prefix }}sorunome/mx-puppet-discord:{{ matrix_mx_puppet_discord_version }}"
+matrix_mx_puppet_discord_docker_image_name_prefix: "{{ 'localhost/' if matrix_mx_puppet_discord_container_image_self_build else matrix_container_global_registry_prefix }}"
 matrix_mx_puppet_discord_docker_image_force_pull: "{{ matrix_mx_puppet_discord_docker_image.endswith(':latest') }}"
 
 matrix_mx_puppet_discord_base_path: "{{ matrix_base_data_path }}/mx-puppet-discord"
@@ -22,7 +23,7 @@ matrix_mx_puppet_discord_docker_src_files_path: "{{ matrix_mx_puppet_discord_bas
 
 matrix_mx_puppet_discord_appservice_port: "8432"
 
-matrix_mx_puppet_discord_homeserver_address: 'http://matrix-synapse:8008'
+matrix_mx_puppet_discord_homeserver_address: "{{ matrix_homeserver_container_url }}"
 matrix_mx_puppet_discord_homeserver_domain: '{{ matrix_domain }}'
 matrix_mx_puppet_discord_appservice_address: 'http://matrix-mx-puppet-discord:{{ matrix_mx_puppet_discord_appservice_port }}'
 
@@ -107,5 +108,6 @@ matrix_mx_puppet_discord_registration_yaml: |
   rate_limited: false
   sender_localpart: _discordpuppet_bot
   url: {{ matrix_mx_puppet_discord_appservice_address }}
+  de.sorunome.msc2409.push_ephemeral: true
 
 matrix_mx_puppet_discord_registration: "{{ matrix_mx_puppet_discord_registration_yaml|from_yaml }}"

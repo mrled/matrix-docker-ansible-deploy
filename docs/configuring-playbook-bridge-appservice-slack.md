@@ -1,5 +1,7 @@
 # Setting up Appservice Slack (optional)
 
+**Note**: bridging to [Slack](https://slack.com) can also happen via the [mx-puppet-slack](configuring-playbook-bridge-mx-puppet-slack.md) bridge supported by the playbook.
+
 The playbook can install and configure [matrix-appservice-slack](https://github.com/matrix-org/matrix-appservice-slack) for you.
 
 See the project's [documentation](https://github.com/matrix-org/matrix-appservice-slack/blob/master/README.md) to learn what it does and why it might be useful to you.
@@ -27,7 +29,7 @@ matrix_appservice_slack_control_room_id: "Your matrix admin room id"
 
 Note that the bot's domain is your server's domain **without the `matrix.` prefix.**
 
-5. Create a new Slack App [here](https://api.slack.com/apps).
+5. Create a Classic Slack App [here](https://api.slack.com/apps?new_classic_app=1).
 
     Name the app "matrixbot" (or anything else you'll remember).
 
@@ -106,5 +108,5 @@ Check you logs, if they say something like
 
 `WARN SlackEventHandler Ignoring message from unrecognised slack channel id : %s (%s) <the channel id> <some other id>`
 
-then unlink your room, reinvite the bot and re-link it again. This may particularly hit you, if you tried to unsuccessfully link 
+then unlink your room, reinvite the bot and re-link it again. This may particularly hit you, if you tried to unsuccessfully link
 your room multiple times without unlinking it after each failed attempt.

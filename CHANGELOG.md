@@ -1,3 +1,209 @@
+# 2021-05-21
+
+## Hydrogen support
+
+Thanks to [Aaron Raimist](https://github.com/aaronraimist), the playbook now supports [Hydrogen](https://github.com/vector-im/hydrogen-web) - a new lightweight matrix client with legacy and mobile browser support.
+
+By default, we still install Element, as Hydrogen is still not fully-featured. Still, people who'd like to try Hydrogen out can now install it via the playbook.
+
+Additional details are available in [Setting up Hydrogen](docs/configuring-playbook-client-hydrogen.md).
+
+
+# 2021-05-19
+
+## Heisenbridge support
+
+Thanks to [Toni Spets (hifi)](https://github.com/hifi), the playbook now supports bridging to [IRC](https://en.wikipedia.org/wiki/Internet_Relay_Chat) using yet another bridge (besides matrix-appservice-irc), called [Heisenbridge](https://github.com/hifi/heisenbridge).
+
+Additional details are available in [Setting up Heisenbridge bouncer-style IRC bridging](docs/configuring-playbook-bridge-heisenbridge.md).
+
+
+# 2021-04-16
+
+## Disabling TLSv1 and TLSv1.1 for Coturn
+
+To improve security, we've [removed TLSv1 and TLSv1.1 support](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/999) from our default [Coturn](https://github.com/coturn/coturn) configuration.
+
+If you need to support old clients, you can re-enable both (or whichever one you need) with the following configuration:
+
+```yaml
+matrix_coturn_tls_v1_enabled: true
+matrix_coturn_tls_v1_1_enabled: true
+```
+
+
+# 2021-04-05
+
+## Automated local Postgres backup support
+
+Thanks to [foxcris](https://github.com/foxcris), the playbook can now make automated local Postgres backups on a fixed schedule using [docker-postgres-backup-local](https://github.com/prodrigestivill/docker-postgres-backup-local).
+
+Additional details are available in [Setting up postgres backup](docs/configuring-playbook-postgres-backup.md).
+
+
+
+# 2021-04-03
+
+## Mjolnir moderation tool (bot) support
+
+Thanks to [Aaron Raimist](https://github.com/aaronraimist), the playbook can now install and configure the [Mjolnir](https://github.com/matrix-org/mjolnir) moderation tool (bot).
+
+Additional details are available in [Setting up Mjolnir](docs/configuring-playbook-bot-mjolnir.md).
+
+
+# 2021-03-20
+
+## Sygnal push gateway support
+
+The playbook can now install the [Sygnal](https://github.com/matrix-org/sygnal) push gateway for you.
+
+This is only useful to people who develop/build their own Matrix client applications.
+
+Additional details are available in our [Setting up Sygnal](docs/configuring-playbook-sygnal.md) docs.
+
+
+# 2021-03-16
+
+## Go-NEB support
+
+Thanks to [Zir0h](https://github.com/Zir0h), the playbook can now install and configure the [Go-NEB](https://github.com/matrix-org/go-neb) bot.
+
+Additional details are available in [Setting up Go-NEB](docs/configuring-playbook-bot-go-neb.md).
+
+
+# 2021-02-19
+
+## GroupMe bridging support via mx-puppet-groupme
+
+Thanks to [Cody Neiman](https://github.com/xangelix), the playbook can now install the [mx-puppet-groupme](https://gitlab.com/robintown/mx-puppet-groupme) bridge for bridging to [GroupMe](https://groupme.com).
+
+This brings the total number of bridges supported by the playbook up to 18. See all supported bridges [here](docs/configuring-playbook.md#bridging-other-networks).
+
+To get started, follow our [Setting up MX Puppet GroupMe](docs/configuring-playbook-bridge-mx-puppet-groupme.md) docs.
+
+## Mautrix Instagram bridging support
+
+The playbook now supports bridging with [Instagram](https://www.instagram.com/) by installing the [mautrix-instagram](https://github.com/tulir/mautrix-instagram) bridge. This playbook functionality is available thanks to [@MarcProe](https://github.com/MarcProe).
+
+Additional details are available in [Setting up Mautrix Instagram bridging](docs/configuring-playbook-bridge-mautrix-instagram.md).
+
+## Synapse workers support
+
+After [lots and lots of work](https://github.com/spantaleev/matrix-docker-ansible-deploy/pull/456) (done over many months by [Marcel Partap](https://github.com/eMPee584), [Max Klenk](https://github.com/maxklenk), a few others from the [Technical University of Dresden, Germany](https://tu-dresden.de/) and various other contributors), support for Synapse workers has finally landed.
+
+Having support for workers makes the playbook suitable for larger homeserver deployments.
+
+Our setup is not yet perfect (we don't support all types of workers; scaling some of them (like `pusher`, `federation_sender`) beyond a single instance is not yet supported). Still, it's a great start and can already power homeservers with thousands of users, like the [Matrix deployment at TU Dresden](https://doc.matrix.tu-dresden.de/en/) discussed in [Matrix Live S06E09 - TU Dresden on their Matrix deployment](https://www.youtube.com/watch?v=UHJX2pmT2gk).
+
+By default, workers are disabled and Synapse runs as a single process (homeservers don't necessarily need the complexity and increased memory requirements of running a worker-based setup).
+
+To enable Synapse workers, follow our [Load balancing with workers](docs/configuring-playbook-synapse.md#load-balancing-with-workers) documentation.
+
+
+# 2021-02-12
+
+## (Potential Breaking Change) Monitoring/metrics support using Prometheus and Grafana
+
+Thanks to [@Peetz0r](https://github.com/Peetz0r), the playbook can now install a bunch of tools for monitoring your Matrix server: the [Prometheus](https://prometheus.io) time-series database server, the Prometheus [node-exporter](https://prometheus.io/docs/guides/node-exporter/) host metrics exporter, and the [Grafana](https://grafana.com/) web UI.
+
+To get get these installed, follow our [Enabling metrics and graphs (Prometheus, Grafana) for your Matrix server](docs/configuring-playbook-prometheus-grafana.md) docs page.
+
+This update comes with a **potential breaking change** for people who were already exposing Synapse metrics (for consumption via another Prometheus installation). From now on, `matrix_synapse_metrics_enabled: true` no longer exposes metrics publicly via matrix-nginx-proxy (at `https://matrix.DOMAIN/_synapse/metrics`). To do so, you'd need to explicitly set `matrix_nginx_proxy_proxy_synapse_metrics: true`.
+
+
+# 2021-01-31
+
+## Etherpad support
+
+Thanks to [@pushytoxin](https://github.com/pushytoxin), the playbook can now install the [Etherpad](https://etherpad.org) realtime collaborative text editor. It can be used in a [Jitsi](https://jitsi.org/) audio/video call or integrated as a widget into Matrix chat rooms via the [Dimension](https://dimension.t2bot.io) integration manager.
+
+To get it installed, follow [our Etherpad docs page](docs/configuring-playbook-etherpad.md).
+
+
+# 2021-01-22
+
+## (Breaking Change) Postgres changes that require manual intervention
+
+We've made a lot of changes to our Postgres setup and some manual action is required (described below). Sorry about the hassle.
+
+**TLDR**: people running an [external Postgres server](docs/configuring-playbook-external-postgres.md) don't need to change anything for now. Everyone else (the common/default case) is affected and manual intervention is required.
+
+### Why?
+
+- we had a default Postgres password (`matrix_postgres_connection_password: synapse-password`), which we think is **not ideal for security anymore**. We now ask you to generate/provide a strong password yourself. Postgres is normally not exposed outside the container network, making it relatively secure, but still:
+  - by tweaking the configuration, you may end up intentionally or unintentionally exposing your Postgres server to the local network (or even publicly), while still using the default default credentials (`synapse` + `synapse-password`)
+  - we can't be sure we trust all these services (bridges, etc). Some of them may try to talk to or attack `matrix-postgres` using the default credentials (`synapse` + `synapse-password`)
+  - you may have other containers running on the same Docker network, which may try to talk to or attack `matrix-postgres` using the default credentials (`synapse` + `synapse-password`)
+- our Postgres usage **was overly-focused on Synapse** (default username of `synapse` and default/main database of `homeserver`). Additional homeserver options are likely coming in the future ([Dendrite](https://matrix.org/docs/projects/server/dendrite), [Conduit](https://matrix.org/docs/projects/server/conduit), [The Construct](https://matrix.org/docs/projects/server/construct)), so being too focused on `matrix-synapse` is not great. From now on, Synapse is just another component of this playbook, which happens to have an *additional database* (called `synapse`) on the Postgres server.
+- we try to reorganize things a bit, to make the playbook even friendlier to people running an [external Postgres server](docs/configuring-playbook-external-postgres.md). Work on this will proceed in the future.
+
+So, this is some **effort to improve security** and to **prepare for a brighter future of having more homeserver options** than just Synapse.
+
+### What has really changed?
+
+- the default superuser Postgres username is now `matrix` (used to be `synapse`)
+- the default Postgres database is now `matrix` (used to be `homeserver`)
+- Synapse's database is now `synapse` (used to be `homeserver`). This is now just another "additional database" that the playbook manages for you
+- Synapse's user called `synapse` is just a regular user that can only use the `synapse` database (not a superuser anymore)
+
+### What do I do if I'm using the integrated Postgres server (default)?
+
+By default, the playbook runs an integrated Postgres server for you in a container (`matrix-postgres`). Unless you've explicitly configured an [external Postgres server](docs/configuring-playbook-external-postgres.md), these steps are meant for you.
+
+To migrate to the new setup, expect a few minutes of downtime, while you follow these steps:
+
+1. We believe the steps below are safe and you won't encounter any data loss, but consider [making a Postgres backup](docs/maintenance-postgres.md#backing-up-postgresql) anyway. If you've never backed up Postgres, now would be a good time to try it.
+
+2. Generate a strong password to be used for your superuser Postgres user (called `matrix`). You can use `pwgen -s 64 1` to generate it, or some other tool. The **maximum length** for a Postgres password is 100 bytes (characters). Don't go crazy!
+
+3. Update your playbook's `inventory/host_vars/matrix.DOMAIN/vars.yml` file, adding a line like this:
+```yaml
+matrix_postgres_connection_password: 'YOUR_POSTGRES_PASSWORD_HERE'
+```
+
+.. where `YOUR_POSTGRES_PASSWORD_HERE` is to be replaced with the password you generated during step #2.
+
+4. Stop all services: `ansible-playbook -i inventory/hosts setup.yml --tags=stop`
+5. Log in to the server via SSH. The next commands will be performed there.
+6. Start the Postgres database server: `systemctl start matrix-postgres`
+7. Open a Postgres shell: `/usr/local/bin/matrix-postgres-cli`
+8. Execute the following query, while making sure to **change the password inside** (**don't forget the ending `;`**):
+
+```sql
+CREATE ROLE matrix LOGIN SUPERUSER PASSWORD 'YOUR_POSTGRES_PASSWORD_HERE';
+```
+
+.. where `YOUR_POSTGRES_PASSWORD_HERE` is to be replaced with the password you generated during step #2.
+
+9. Execute the following queries as you see them (no modifications necessary, so you can just **paste them all at once**):
+
+```sql
+CREATE DATABASE matrix OWNER matrix;
+
+ALTER DATABASE postgres OWNER TO matrix;
+ALTER DATABASE template0 OWNER TO matrix;
+ALTER DATABASE template1 OWNER TO matrix;
+
+\c matrix;
+
+ALTER DATABASE homeserver RENAME TO synapse;
+
+ALTER ROLE synapse NOSUPERUSER NOCREATEDB NOCREATEROLE;
+
+\quit
+```
+
+You may need to press *Enter* after pasting the lines above.
+
+10. Re-run the playbook normally: `ansible-playbook -i inventory/hosts setup.yml --tags=setup-all,start`
+
+### What do I do if I'm using an external Postgres server?
+
+If you've explicitly configured an [external Postgres server](docs/configuring-playbook-external-postgres.md), there are **no changes** that you need to do at this time.
+
+The fact that we've renamed Synapse's database from `homeserver` to `synapse` (in our defaults) should not affect you, as you're already explicitly defining `matrix_synapse_database_database` (if you've followed our guide, that is). If you're not explicitly defining this variable, you may wish to do so (`matrix_synapse_database_database: homeserver`), to avoid the new `synapse` default and keep things as they were.
+
+
 # 2021-01-20
 
 ## (Breaking Change) The mautrix-facebook bridge now requires a Postgres database

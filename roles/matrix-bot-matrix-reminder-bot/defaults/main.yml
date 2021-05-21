@@ -2,8 +2,8 @@
 # See: https://github.com/anoadragon453/matrix-reminder-bot
 
 matrix_bot_matrix_reminder_bot_enabled: true
-
-matrix_bot_matrix_reminder_bot_docker_image: "docker.io/anoa/matrix-reminder-bot:release-v0.2.0"
+matrix_bot_matrix_reminder_bot_version: release-v0.2.0
+matrix_bot_matrix_reminder_bot_docker_image: "{{ matrix_container_global_registry_prefix }}anoa/matrix-reminder-bot:{{ matrix_bot_matrix_reminder_bot_version }}"
 matrix_bot_matrix_reminder_bot_docker_image_force_pull: "{{ matrix_bot_matrix_reminder_bot_docker_image.endswith(':latest') }}"
 
 matrix_bot_matrix_reminder_bot_base_path: "{{ matrix_base_data_path }}/matrix-reminder-bot"
@@ -58,7 +58,7 @@ matrix_bot_matrix_reminder_bot_matrix_user_id: '@{{ matrix_bot_matrix_reminder_b
 # The password that the bot uses to authenticate.
 matrix_bot_matrix_reminder_bot_matrix_user_password: ''
 
-matrix_bot_matrix_reminder_bot_matrix_homeserver_url: 'http://matrix-synapse:8008'
+matrix_bot_matrix_reminder_bot_matrix_homeserver_url: "{{ matrix_homeserver_container_url }}"
 
 # The timezone to use when creating reminders.
 # Examples: 'Europe/London', 'Etc/UTC'
