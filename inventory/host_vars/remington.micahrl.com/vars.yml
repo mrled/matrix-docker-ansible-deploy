@@ -30,6 +30,10 @@ matrix_synapse_macaroon_secret_key: "{{ vault_matrix_synapse_macaroon_secret_key
 # https://github.com/spantaleev/matrix-docker-ansible-deploy/blob/master/docs/configuring-playbook-telemetry.md
 matrix_synapse_report_stats: true
 
+# Goddammit
+# https://github.com/matrix-org/synapse#help-synapse-is-slow-and-eats-all-my-ram-cpu
+matrix_synapse_caches_global_factor: 2.0
+
 # Email settings
 matrix_mailer_sender_address: matrix@micahrl.com
 matrix_mailer_relay_use: true
@@ -47,17 +51,19 @@ matrix_s3_media_store_aws_access_key: "{{ vault_matrix_s3_media_store_aws_access
 matrix_s3_media_store_aws_secret_key: "{{ vault_matrix_s3_media_store_aws_secret_key }}"
 matrix_s3_media_store_region: "us-east-2"
 
-# Jitsi settings
-matrix_jitsi_enabled: true
-matrix_jitsi_jicofo_component_secret: "{{ vault_matrix_jitsi_jicofo_component_secret }}"
-matrix_jitsi_jicofo_auth_password: "{{ vault_matrix_jitsi_jicofo_auth_password }}"
-matrix_jitsi_jvb_auth_password: "{{ vault_matrix_jitsi_jvb_auth_password }}"
-matrix_jitsi_jibri_recorder_password: "{{ vault_matrix_jitsi_jibri_recorder_password }}"
-matrix_jitsi_jibri_xmpp_password: "{{ vault_matrix_jitsi_jibri_xmpp_password }}"
-# Require an authenticated user to create a meeting
-matrix_jitsi_enable_auth: true
-# Allow guests to join meetings created by authenticated users
-matrix_jitsi_enable_guests: true
+# DISABLING all Jitsi settings
+# Was using up almost 4GB RAM on my 4GB server
+# # Jitsi settings
+# matrix_jitsi_enabled: true
+# matrix_jitsi_jicofo_component_secret: "{{ vault_matrix_jitsi_jicofo_component_secret }}"
+# matrix_jitsi_jicofo_auth_password: "{{ vault_matrix_jitsi_jicofo_auth_password }}"
+# matrix_jitsi_jvb_auth_password: "{{ vault_matrix_jitsi_jvb_auth_password }}"
+# matrix_jitsi_jibri_recorder_password: "{{ vault_matrix_jitsi_jibri_recorder_password }}"
+# matrix_jitsi_jibri_xmpp_password: "{{ vault_matrix_jitsi_jibri_xmpp_password }}"
+# # Require an authenticated user to create a meeting
+# matrix_jitsi_enable_auth: true
+# # Allow guests to join meetings created by authenticated users
+# matrix_jitsi_enable_guests: true
 
 matrix_synapse_federation_enabled: yes
 
@@ -100,3 +106,33 @@ matrix_mx_puppet_slack_enabled: true
 matrix_heisenbridge_enabled: true
 matrix_heisenbridge_owner: "@me:micahrl.com"
 matrix_heisenbridge_identd_enabled: true
+
+# Go-NEB Matrix bot
+matrix_bot_go_neb_enabled: true
+matrix_bot_go_neb_clients:
+  - UserID: "@djinn:{{ matrix_domain }}"
+    AccessToken: "{{ vault_matrix_bot_go_neb_client_djinn_accesstoken }}"
+    DeviceID: "DEVICE1"
+    HomeserverURL: "{{ matrix_homeserver_container_url }}"
+    Sync: true
+    AutoJoinRooms: true
+    DisplayName: "جن‎"
+    AcceptVerificationFromUsers: ["me:{{ matrix_domain }}"]
+matrix_bot_go_neb_services:
+  - ID: "echo_service"
+    Type: "echo"
+    UserID: "@djinn:{{ matrix_domain }}"
+    Config: {}
+  - ID: "wikipedia_service"
+    Type: "wikipedia"
+    UserID: "@djinn:{{ matrix_domain }}"
+    Config: {}
+  - ID: "rss_service"
+    Type: "rssbot"
+    UserID: "@djinn:{{ matrix_domain }}"
+    Config:
+      feeds:
+        "https://me.micahrl.com/rss.xml":
+          rooms: ["#blog:{{ matrix_domain }}"]
+        "http://lorem-rss.herokuapp.com/feed?unit=minute&interval=60":
+          rooms: ["#djinn-rsstest:{{ matrix_domain }}"]
