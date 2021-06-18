@@ -34,6 +34,11 @@ matrix_synapse_report_stats: true
 # https://github.com/matrix-org/synapse#help-synapse-is-slow-and-eats-all-my-ram-cpu
 matrix_synapse_caches_global_factor: 2.0
 
+# By default, the admin API is only accessible from inside the Matrix server
+# This is more secure, but less fun
+# YOLO
+matrix_nginx_proxy_proxy_matrix_client_api_forwarded_location_synapse_admin_api_enabled: true
+
 # Email settings
 matrix_mailer_sender_address: matrix@micahrl.com
 matrix_mailer_relay_use: true
